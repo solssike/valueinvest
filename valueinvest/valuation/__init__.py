@@ -17,6 +17,7 @@ from .value_trap import (
     TrapIndicator,
     detect_value_trap,
 )
+from .sotp import SOTPValuation, SOTPSegment
 from .engine import ValuationEngine
 
 __all__ = [
@@ -45,5 +46,7 @@ __all__ = [
     "TrapCategory",
     "TrapIndicator",
     "detect_value_trap",
+    "SOTPValuation",
+    "SOTPSegment",
     "ValuationEngine",
 ]

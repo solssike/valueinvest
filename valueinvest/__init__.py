@@ -65,6 +65,10 @@ from .implied_growth.base import ImpliedGrowthResult
 from .redflags.engine import AccountingRedFlagsEngine
 from .redflags.base import RedFlagResult
 
+# DuPont ROE decomposition
+from .dupont.engine import DuPontAnalysisEngine
+from .dupont.base import DuPontResult
+
 __version__ = "1.2.1"
 
 __all__ = [
@@ -103,4 +107,7 @@ __all__ = [
     # Accounting red flags
     "AccountingRedFlagsEngine",
     "RedFlagResult",
+    # DuPont ROE decomposition
+    "DuPontAnalysisEngine",
+    "DuPontResult",
 ]

@@ -17,6 +17,7 @@ from .value_trap import ValueTrapDetector, detect_value_trap
 from .sbc import SBCAnalysis
 from .relative import PERelativeValuation, PBRelativeValuation
 from .mscore import BeneishMScore
+from .sotp import SOTPValuation, SOTPSegment
 # Cyclical valuation methods
 try:
     from ..cyclical.valuation import (
@@ -92,6 +93,7 @@ class ValuationEngine:
         "pe_relative",  # NEW
         "pb_relative",  # NEW
         "beneish_m",  # NEW
+        "sotp",  # SOTP
         # Cyclical methods
         "cyclical_pb",
         "cyclical_pe",
@@ -145,6 +147,13 @@ class ValuationEngine:
         "cyclical_dividend",
     ]
 
+    CONGLOMERATE_METHODS = [
+        "sotp",
+        "ev_ebitda",
+        "dcf",
+        "reverse_dcf",
+    ]
+
     # Methods that require CyclicalStock (not compatible with regular Stock)
     _CYCLICAL_STOCK_METHODS = set(CYCLICAL_METHODS)
 
@@ -174,6 +183,8 @@ class ValuationEngine:
             "pe_relative": PERelativeValuation(),
             "pb_relative": PBRelativeValuation(),
             "beneish_m": BeneishMScore(),
+            # SOTP
+            "sotp": SOTPValuation(),
             # Cyclical methods (optional)
             **({
                 "cyclical_pb": CyclicalPBValuation(),
@@ -286,6 +297,19 @@ class ValuationEngine:
                 prior_gross_margin=kwargs.get("prior_gross_margin"),
                 prior_asset_turnover=kwargs.get("prior_asset_turnover"),
             )
+        elif method == "sotp":
+            segments = kwargs.get("segments")
+            if segments:
+                segments = [
+                    s if isinstance(s, SOTPSegment) else SOTPSegment(**s)
+                    for s in segments
+                ]
+            return SOTPValuation(
+                segments=segments,
+                holdco_discount_pct=kwargs.get("holdco_discount_pct"),
+                minority_interest=kwargs.get("minority_interest", 0.0),
+                unallocated_costs=kwargs.get("unallocated_costs", 0.0),
+            )
         return self._methods[method]
 
     def run_multiple(
@@ -348,6 +372,10 @@ class ValuationEngine:
         if not CYCLICAL_AVAILABLE:
             return []
         return self.run_multiple(stock, self.CYCLICAL_METHODS, **kwargs)
+
+    def run_conglomerate(self, stock, **kwargs) -> List[ValuationResult]:
+        """Run conglomerate/multi-segment valuation methods."""
+        return self.run_multiple(stock, self.CONGLOMERATE_METHODS, **kwargs)
 
     def run_all(self, stock, **kwargs) -> List[ValuationResult]:
         return self.run_multiple(stock, list(self._methods.keys()), **kwargs)
