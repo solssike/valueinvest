@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.4.0] - 2026-05-31
 
+### Fixed
+- **YFinanceNewsFetcher**: Fixed date parsing for yfinance news API format change. `pubDate` is now ISO 8601 string instead of Unix timestamp. Added `re` import and proper timezone handling.
+
 ### Added
 - **DuPont ROE Decomposition**: New `dupont` module with `DuPontAnalysisEngine` for decomposing ROE into driving factors. Supports three-step (NPM × AT × EM) and five-step (Tax × Interest × OpMargin × AT × EM) decomposition. Identifies primary ROE driver, classifies quality, and flags leverage dependency.
 - **SOTP Valuation**: New `sotp` module with `SOTPValuation` and `SOTPSegment` for Sum-of-the-Parts valuation of conglomerates and multi-segment companies. Supports per-segment valuation via EV/EBITDA, EV/Revenue, P/E, and Book Value methods, with holdco discount, minority interest, and unallocated cost adjustments. Registered in `ValuationEngine` with `CONGLOMERATE_METHODS` group and `run_conglomerate()` method.

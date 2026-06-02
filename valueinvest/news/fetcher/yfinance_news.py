@@ -5,6 +5,7 @@ Fetches news and analyst data from Yahoo Finance.
 """
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+import re
 
 from .base import BaseNewsFetcher
 from ..base import Market, NewsItem, Guidance, AnalystRating
@@ -39,14 +40,14 @@ class YFinanceNewsFetcher(BaseNewsFetcher):
                 return news_items
             
             for article in news_list:
-                pub_timestamp = article.get("content", {}).get("pubDate", 0)
-                if pub_timestamp:
-                    pub_date = datetime.fromtimestamp(pub_timestamp)
+                content = article.get("content", {})
+                pub_date_str = content.get("pubDate", "")
+                if pub_date_str:
+                    pub_date = datetime.fromisoformat(re.sub(r"Z$", "+00:00", pub_date_str)).replace(tzinfo=None)
                 else:
                     pub_date = datetime.now()
                 
                 if start_dt <= pub_date <= end_dt:
-                    content = article.get("content", {})
                     item = NewsItem(
                         ticker=ticker,
                         title=content.get("title", article.get("title", "")),
