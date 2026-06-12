@@ -107,16 +107,21 @@ _QUARTER_FIELD_MAP = {
 }
 
 
+def _get_quarter_field(q: QuarterlyEarnings, field_name: str) -> float:
+    """Get a quarter field value, treating None as 0."""
+    qfield = _QUARTER_FIELD_MAP[field_name]
+    val = getattr(q, qfield, 0.0)
+    return val if val is not None else 0.0
+
+
 def _sum_quarter_field(quarters: List[QuarterlyEarnings], field_name: str) -> float:
     """Sum a field across all quarters."""
-    qfield = _QUARTER_FIELD_MAP[field_name]
-    return sum(getattr(q, qfield, 0.0) for q in quarters)
+    return sum(_get_quarter_field(q, field_name) for q in quarters)
 
 
 def _has_any_data(quarters: List[QuarterlyEarnings], field_name: str) -> bool:
     """Check if any quarter has non-zero data for this field."""
-    qfield = _QUARTER_FIELD_MAP[field_name]
-    return any(getattr(q, qfield, 0.0) != 0.0 for q in quarters)
+    return any(_get_quarter_field(q, field_name) != 0.0 for q in quarters)
 
 
 def compute_ttm(
