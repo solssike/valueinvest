@@ -313,6 +313,23 @@ class Stock:
         """Total shareholder yield (dividend + true buyback yield)"""
         return self.dividend_yield + self.true_buyback_yield
 
+    # === Data Provenance Properties ===
+
+    @property
+    def is_patched(self) -> bool:
+        """Whether earnings data has been patched with manual quarterly data."""
+        return "earnings_patch" in self.extra
+
+    @property
+    def data_provenance(self) -> Dict[str, str]:
+        """Return dict mapping field names to their data source (API vs patched)."""
+        provenance = {}
+        if self.is_patched:
+            patch_info = self.extra["earnings_patch"]
+            for field_name in patch_info.get("patched_fields", []):
+                provenance[field_name] = f"patched ({patch_info['source']})"
+        return provenance
+
     def __repr__(self) -> str:
         parts = [f"Stock({self.ticker})"]
         if self.name:

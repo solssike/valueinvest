@@ -33,6 +33,7 @@ def fetch_stock_data(
     industry: str = "",
     margin_trend: str = "stable",
     roe_trend: str = "stable",
+    earnings_patch_path: Optional[str] = None,
 ) -> dict[str, Any]:
     """
     Fetch all stock data for analysis.
@@ -45,6 +46,7 @@ def fetch_stock_data(
         industry: Industry for AI vulnerability assessment
         margin_trend: Margin trend (stable, compressing, expanding)
         roe_trend: ROE trend (stable, declining, improving)
+        earnings_patch_path: Path to JSON file with manual earnings patch data
 
     Returns:
         Dictionary containing all analysis data
@@ -72,6 +74,29 @@ def fetch_stock_data(
             return result
 
         stock = Stock.from_dict(fetch_result.data)
+
+        # Apply earnings patch if provided
+        if earnings_patch_path:
+            try:
+                from valueinvest.data.patch import (
+                    apply_earnings_patch,
+                    load_patch_from_json,
+                )
+
+                patch = load_patch_from_json(earnings_patch_path)
+                patch_result = apply_earnings_patch(stock, patch)
+
+                result["data_provenance"] = {
+                    "patched": True,
+                    "source": patch.source_description,
+                    "quarters": [q.quarter_label for q in patch.quarters],
+                    "patched_fields": list(patch_result.patched_fields.keys()),
+                    "ttm_breakdown": patch_result.ttm_breakdown,
+                    "warnings": patch_result.warnings,
+                }
+            except Exception as e:
+                result["errors"].append(f"Failed to apply earnings patch: {str(e)}")
+                result["data_provenance"] = {"patched": False, "error": str(e)}
 
         result["stock"] = {
             "name": stock.name,
@@ -410,6 +435,12 @@ def main():
         choices=["stable", "declining", "improving"],
         help="ROE trend for value trap detection",
     )
+    parser.add_argument(
+        "--earnings-patch",
+        default=None,
+        metavar="JSON_FILE",
+        help="Path to JSON file with manual quarterly earnings patch data",
+    )
 
     args = parser.parse_args()
 
@@ -421,6 +452,7 @@ def main():
         industry=args.industry,
         margin_trend=args.margin_trend,
         roe_trend=args.roe_trend,
+        earnings_patch_path=args.earnings_patch,
     )
 
     if args.output == "json":

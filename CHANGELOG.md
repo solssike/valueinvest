@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-06-12
+
+### Added
+- **Earnings Patch**: New `data.patch` module for patching Stock objects with manually collected quarterly earnings data when API data is delayed. Computes TTM metrics (full 4Q or partial NQ with `sum(NQ) + API_annual × (4-N)/4`), stores data provenance in `stock.extra`, and adds `is_patched` / `data_provenance` properties to Stock. CLI support via `--earnings-patch` flag on `fetch_stock_data.py`.
+
 ## [1.4.0] - 2026-05-31
 
 ### Fixed
