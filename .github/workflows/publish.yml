@@ -1,40 +1,29 @@
-name: Daily Stock Analysis
+name: ValueInvest Daily Run
 
 on:
   schedule:
-    # 每天北京时间 09:30 运行 (对应 UTC 01:30)
-    - cron: '30 01 * * *'
-  # 允许在 GitHub 界面手动点击按钮运行
+    - cron: '30 01 * * *' # 每天北京时间 09:30
   workflow_dispatch:
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          # 安装项目要求的依赖
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # 额外安装 Telegram 推送需要的库
+          pip install -e ".[fetch]" 
           pip install python-telegram-bot
-          # 安装数据源库 (ValueInvest 依赖)
-          pip install akshare pandas
-
-      - name: Run Analysis Script
+      - name: Run Analysis and Notify
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # 这里调用你的分析脚本
-          # 如果项目没有现成的入口脚本，你需要先在根目录创建一个
-          python bot_runner.py
+          # 1. 运行分析并将结果存入文本文件
+          python scripts/stock_analyzer.py 600887 --news > report.txt
+          # 2. 通过自定义脚本读取 report.txt 并推送到 Telegram
+          python notify_telegram.py report.txt
