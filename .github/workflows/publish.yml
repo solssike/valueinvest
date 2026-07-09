@@ -9,21 +9,25 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
+          # 安装项目及所有数据抓取依赖
           pip install -e ".[fetch]" 
           pip install python-telegram-bot
-      - name: Run Analysis and Notify
+
+      - name: Run Analysis
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # 1. 运行分析并将结果存入文本文件
-          python scripts/stock_analyzer.py 600887 --news > report.txt
-          # 2. 通过自定义脚本读取 report.txt 并推送到 Telegram
-          python notify_telegram.py report.txt
+          # 直接调用我们写的健壮性脚本，不再使用原仓库的 CLI 脚本
+          python bot_runner.py
