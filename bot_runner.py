@@ -8,29 +8,31 @@ async def run_analysis():
     chat_id = os.getenv('TELEGRAM_CHAT_ID')
     bot = Bot(token=token)
     
-    # 尝试分析美股，yfinance 在 Actions 环境下通常非常稳定
-    target_stocks = ["AAPL", "MSFT"] 
+    target_stocks = ["AAPL", "MSFT", "600887"] 
     results = []
 
     for ticker in target_stocks:
         try:
-            print(f"正在分析美股: {ticker}...")
+            print(f"正在分析: {ticker}...")
             stock = Stock.from_api(ticker)
             
-            # 校验是否抓取到价格
             if not stock.current_price or stock.current_price == 0:
-                results.append(f"⚠️ {ticker}: yfinance 未能获取价格。")
+                results.append(f"⚠️ {ticker}: 获取数据失败。")
                 continue
 
             engine = ValuationEngine()
-            # 运行分析
             analysis = engine.run_all(stock)
             
-            results.append(f"✅ {ticker} 现价: ${stock.current_price}")
+            msg = f"✅ *{stock.name} ({ticker})*\n💰 现价: {stock.current_price}"
+            if hasattr(analysis, 'fair_value') and analysis.fair_value:
+                msg += f"\n🎯 估值: {analysis.fair_value:.2f}"
+            results.append(msg)
+            
         except Exception as e:
-            results.append(f"❌ {ticker} 异常: {str(e)}")
+            results.append(f"❌ {ticker} 分析异常: {str(e)}")
 
-    await bot.send_message(chat_id=chat_id, text="\n".join(results))
+    message = "📊 *每日投资分析简报*\n\n" + "\n\n".join(results)
+    await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
 if __name__ == "__main__":
     asyncio.run(run_analysis())
