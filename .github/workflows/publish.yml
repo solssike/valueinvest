@@ -1,26 +1,40 @@
-name: Publish to PyPI
+name: Daily Stock Analysis
 
 on:
-  release:
-    types: [published]
+  schedule:
+    # 每天北京时间 09:30 运行 (对应 UTC 01:30)
+    - cron: '30 01 * * *'
+  # 允许在 GitHub 界面手动点击按钮运行
+  workflow_dispatch:
 
 jobs:
-  publish:
+  analyze:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install build tools
-        run: pip install build
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # 安装项目要求的依赖
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # 额外安装 Telegram 推送需要的库
+          pip install python-telegram-bot
+          # 安装数据源库 (ValueInvest 依赖)
+          pip install akshare pandas
 
-      - name: Build package
-        run: python -m build
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Run Analysis Script
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          # 这里调用你的分析脚本
+          # 如果项目没有现成的入口脚本，你需要先在根目录创建一个
+          python bot_runner.py
