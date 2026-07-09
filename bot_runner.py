@@ -3,6 +3,9 @@ import asyncio
 from telegram import Bot
 from valueinvest import Stock, ValuationEngine
 
+# 强制设置 Token (从 GitHub Secrets 获取)
+os.environ["TUSHARE_TOKEN"] = os.getenv("TUSHARE_TOKEN", "")
+
 async def run_analysis():
     token = os.getenv('TELEGRAM_TOKEN')
     chat_id = os.getenv('TELEGRAM_CHAT_ID')
@@ -13,29 +16,21 @@ async def run_analysis():
 
     for code in target_stocks:
         try:
-            print(f"正在分析: {code}...")
-            # 尝试通过 API 获取
+            # 此时 Stock.from_api 会优先使用 Tushare
             stock = Stock.from_api(code)
             
-            # 调试：查看股票是否抓取到了价格
-            print(f"DEBUG - {code} 价格属性: {stock.current_price}")
-            
-            if stock.current_price is None or stock.current_price == 0:
-                results.append(f"⚠️ {code}: 未能获取实时价格，请检查网络数据源。")
+            if not stock.current_price:
+                results.append(f"⚠️ {code}: 无法通过 Tushare 获取数据，请检查 Token 积分是否充足。")
                 continue
 
             engine = ValuationEngine()
             analysis = engine.run_all(stock)
             
-            msg = f"✅ *{stock.name} ({code})*\n"
-            msg += f"💰 当前价格: ¥{stock.current_price}\n"
-            results.append(msg)
-            
+            results.append(f"✅ {stock.name}({code}) 现价: {stock.current_price}")
         except Exception as e:
-            results.append(f"❌ {code} 异常: {str(e)}")
+            results.append(f"❌ {code} 分析异常: {str(e)}")
 
-    message = "📊 *今日价值投资分析简报*\n\n" + "\n".join(results)
-    await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+    await bot.send_message(chat_id=chat_id, text="\n".join(results))
 
 if __name__ == "__main__":
     asyncio.run(run_analysis())
