@@ -1,50 +1,32 @@
-import os
-import asyncio
-from telegram import Bot
-from valueinvest import Stock, ValuationEngine
+name: ValueInvest Daily Run
 
-async def run_analysis():
-    # 1. 初始化配置
-    token = os.getenv('TELEGRAM_TOKEN')
-    chat_id = os.getenv('TELEGRAM_CHAT_ID')
-    bot = Bot(token=token)
-    
-    # 混合列表：美股(yfinance, 免Token) + A股(需网络/Token)
-    target_stocks = ["AAPL", "MSFT", "600887"] 
-    results = []
+on:
+  schedule:
+    - cron: '30 01 * * *'
+  workflow_dispatch:
 
-    for ticker in target_stocks:
-        try:
-            print(f"正在分析: {ticker}...")
-            # 尝试获取股票数据
-            stock = Stock.from_api(ticker)
-            
-            # 校验数据有效性
-            if not stock.current_price or stock.current_price == 0:
-                results.append(f"⚠️ {ticker}: 获取数据失败 (网络限制或代码不存在)。")
-                continue
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            # 运行分析引擎
-            engine = ValuationEngine()
-            analysis = engine.run_all(stock)
-            
-            # 格式化输出
-            msg = f"✅ *{stock.name} ({ticker})*\n"
-            msg += f"💰 现价: {stock.current_price}\n"
-            # 如果分析对象包含 fair_value，则展示
-            if hasattr(analysis, 'fair_value') and analysis.fair_value:
-                msg += f"🎯 估值: {analysis.fair_value:.2f}"
-            else:
-                msg += "📊 分析已完成 (需深入解读详情)"
-            
-            results.append(msg)
-            
-        except Exception as e:
-            results.append(f"❌ {ticker} 分析异常: {str(e)}")
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    # 2. 发送消息
-    message = "📊 *每日投资分析简报*\n\n" + "\n\n".join(results)
-    await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[fetch]" 
+          pip install python-telegram-bot
 
-if __name__ == "__main__":
-    asyncio.run(run_analysis())
+      - name: Run Analysis
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          # 这里只运行 Python 脚本
+          python bot_runner.py
